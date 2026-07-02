@@ -1,5 +1,5 @@
-import FilterButton from "~/components/filterButton";
-import Row from "~/components/row";
+import FilterButton from "~/components/dashboard/filterButton";
+import Row from "~/components/dashboard/row";
 import { useState, useEffect } from "react";
 
 type PRStatus = "open" | "merged" | "closed";
@@ -17,7 +17,7 @@ export default function Dashboard() {
   const [pullRequests, setPullRequests] = useState<PullRequest[]>([]);
 
   useEffect(() => {
-    async function fetchPrs() {
+    async function fetchPRs() {
       try {
         const response = await fetch("http://127.0.0.1:3000/pull_requests");
         const data = await response.json();
@@ -26,7 +26,7 @@ export default function Dashboard() {
         console.error("Error fetching pull requests", e);
       }
     }
-    fetchPrs();
+    fetchPRs();
   }, []);
 
   const filteredPrs = pullRequests.filter((pr) => {
@@ -41,7 +41,6 @@ export default function Dashboard() {
       <div className="flex flex-row justify-between items-center px-4 py-4 border-b border-gray-200">
         <div>
           <h1 className="text-lg font-medium">Pull Requests</h1>
-          <p className="text-sm text-gray-500">merge-ai/frontend</p>
         </div>
         <div className="flex flex-row space-x-4">
           <FilterButton status="All" isActive={selectedTag === "All"} onClick={() => setSelectedTag("All")} />
