@@ -1,6 +1,7 @@
 import pg from "pg";
 import express from "express";
 import cors from "cors";
+import Anthropic from "@anthropic-ai/sdk";
 
 const { Pool } = pg;
 
@@ -16,6 +17,12 @@ const app = express();
 app.use(cors());
 
 const port = 3000;
+
+const github_headers = { "User-Agent": "merge-ai", Accept: "application/vnd.github+json" };
+
+const client = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
@@ -54,9 +61,8 @@ function checkStatus(state: string, merged_at: string | null) {
 
 app.post("/pull_requests/sync", async (req, res) => {
   try {
-    const headers = { "User-Agent": "merge-ai", Accept: "application/vnd.github+json" };
     const response = await fetch(`https://api.github.com/repos/${req.query.owner}/${req.query.repo}/pulls?state=all`, {
-      headers: headers,
+      headers: github_headers,
     });
     const prs = await response.json();
 
@@ -72,6 +78,39 @@ app.post("/pull_requests/sync", async (req, res) => {
     return res.status(201).json({ message: "Successfully connected to github!" });
   } catch (e) {
     return res.status(500).json({ error: "Failed to connect to github!" });
+  }
+});
+
+app.get("/summary", async (req, res) => {
+  try {
+    // if summary already exists, skip
+    const getQuery = `SELECT summary FROM pull_requests WHERE id = $1`;
+    const existingResult = await pool.query(getQuery, [req.query.id]);
+    const existingSummary = existingResult.rows[0]?.summary;
+
+    if (existingSummary) {
+      return res.json({ summary: existingSummary });
+    }
+
+    const response = await fetch(`https://api.github.com/repos/${req.query.owner}/${req.query.repo}/pulls/${req.query.id}`);
+    const prInfo = await response.json();
+
+    const message = await client.messages.create({
+      max_tokens: 1024,
+      system: "You summarize GitHub pull requests concisely.",
+      messages: [{ role: "user", content: `Summarize this PR in one to two sentences.\n\nTitle: ${prInfo.title}\n\nDescription: ${prInfo.body}` }],
+      model: "claude-haiku-4-5",
+    });
+    const summaryText = message.content.find((b) => b.type === "text")?.text ?? "";
+
+    // save this message under summary inside postgres
+    const updateQuery = `UPDATE pull_requests SET summary = $1 WHERE id = $2`;
+    const updateValues = [summaryText, req.query.id];
+    await pool.query(updateQuery, updateValues);
+
+    return res.json({ summary: summaryText });
+  } catch (e) {
+    return res.status(500).json({ error: "Failed to fetch summary for this PR" });
   }
 });
 
