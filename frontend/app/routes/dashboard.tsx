@@ -2,18 +2,19 @@ import FilterButton from "~/components/dashboard/filterButton";
 import Row from "~/components/dashboard/row";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import type { Route } from "./+types/dashboard";
 
-type PRStatus = "open" | "merged" | "closed";
+type prStatus = "open" | "merged" | "closed";
 
 interface PullRequest {
-  status: PRStatus;
+  status: prStatus;
   title: string;
   id: number;
   author: string;
   created_at: string;
 }
 
-export default function Dashboard() {
+export default function Dashboard({ params }: Route.ComponentProps) {
   const [selectedTag, setSelectedTag] = useState("All");
   const [pullRequests, setPullRequests] = useState<PullRequest[]>([]);
 
@@ -34,7 +35,7 @@ export default function Dashboard() {
     fetchPRs();
   }, []);
 
-  const filteredPrs = pullRequests.filter((pr) => {
+  const filteredPRs = pullRequests.filter((pr) => {
     if (selectedTag === "All") {
       return true;
     }
@@ -52,7 +53,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div>
+    <div className="max-w-4xl mx-auto">
       <div className="flex flex-row justify-between items-center px-4 py-4 border-b border-gray-200">
         <div className="flex flex-row items-center space-x-4">
           <h1 className="text-lg font-medium">Pull Requests</h1>
@@ -67,8 +68,8 @@ export default function Dashboard() {
           <FilterButton status="Closed" isActive={selectedTag === "Closed"} onClick={() => setSelectedTag("Closed")} />
         </div>
       </div>
-      {filteredPrs.map((pr) => (
-        <Row key={pr.id} id={pr.id} title={pr.title} status={pr.status} author={pr.author} time={pr.created_at} />
+      {filteredPRs.map((pr) => (
+        <Row key={pr.id} id={pr.id} title={pr.title} status={pr.status} author={pr.author} time={pr.created_at} owner={params.owner} repo={params.repo} />
       ))}
     </div>
   );

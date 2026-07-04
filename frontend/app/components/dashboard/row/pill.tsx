@@ -1,10 +1,10 @@
-type PRStatus = "open" | "merged" | "closed";
+type prStatus = "open" | "merged" | "closed";
 
 interface PillProps {
-  status: PRStatus;
+  status: prStatus;
 }
 
-const colorMap: Record<PRStatus, String> = {
+const colorMap: Record<prStatus, String> = {
   open: "bg-green-100 text-green-800",
   merged: "bg-purple-100 text-purple-800",
   closed: "bg-red-100 text-red-800",

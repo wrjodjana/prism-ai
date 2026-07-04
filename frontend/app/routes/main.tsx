@@ -10,14 +10,14 @@ export default function Main() {
   async function handleSync(owner: string, repo: string) {
     try {
       await fetch(`http://127.0.0.1:3000/pull_requests/sync?owner=${owner}&repo=${repo}`, { method: "POST" });
-      navigate("/dashboard");
+      navigate(`/dashboard/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`);
     } catch (e) {
       console.error("Error posting git information", e);
     }
   }
 
   return (
-    <div>
+    <div className="max-w-4xl mx-auto">
       <div className="flex flex-row justify-between items-center px-4 py-4 border-b border-gray-200">
         <div>
           <h1 className="text-lg font-medium">Connect Repository</h1>
