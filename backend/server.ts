@@ -98,7 +98,7 @@ app.get("/summary", async (req, res) => {
     const message = await client.messages.create({
       max_tokens: 1024,
       system: "You summarize GitHub pull requests concisely.",
-      messages: [{ role: "user", content: `Summarize this PR in one to two sentences.\n\nTitle: ${prInfo.title}\n\nDescription: ${prInfo.body}` }],
+      messages: [{ role: "user", content: `Summarize this PR in one to two sentences for a customer-facing user.\n\nTitle: ${prInfo.title}\n\nDescription: ${prInfo.body}` }],
       model: "claude-haiku-4-5",
     });
     const summaryText = message.content.find((b) => b.type === "text")?.text ?? "";
