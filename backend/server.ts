@@ -2,6 +2,10 @@ import pg from "pg";
 import express from "express";
 import cors from "cors";
 import Anthropic from "@anthropic-ai/sdk";
+import type { Endpoints } from "@octokit/types";
+
+import { readFileSync } from "fs";
+import { join } from "path";
 
 const { Pool } = pg;
 
@@ -16,16 +20,92 @@ const pool = new Pool({
 const app = express();
 app.use(cors());
 
-const port = 3000;
+const EXPRESS_PORT = 3000;
+const GITHUB_HEADERS = {
+  "User-Agent": "prism-ai",
+  Accept: "application/vnd.github+json",
+  Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+  "X-Github-Api-Version": "2026-03-10",
+};
+const promptTemplate = readFileSync(join(process.cwd(), "prompts", "summary.md"), "utf-8");
 
-const github_headers = { "User-Agent": "merge-ai", Accept: "application/vnd.github+json" };
-
-const client = new Anthropic({
+const ANTHROPIC_CLIENT = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
+});
+
+// customer-facing requests
+app.get("/updates/:owner/:repo", async (req, res) => {
+  try {
+    const { owner, repo } = req.params;
+    const githubResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls?state=closed`, {
+      headers: GITHUB_HEADERS,
+    });
+
+    if (!githubResponse.ok) {
+      return res.status(githubResponse.status).json({ error: "Failed to fetch pull requests!" });
+    }
+
+    type PullRequest = Endpoints["GET /repos/{owner}/{repo}/pulls"]["response"]["data"][number];
+    const pullRequests = (await githubResponse.json()) as PullRequest[];
+
+    // filter only at merged_at != null
+    const merged = pullRequests.filter((pr: PullRequest) => pr.merged_at !== null);
+
+    // batch merge requests
+    const batched = merged.map((pr: PullRequest) => ({
+      number: pr.number,
+      title: pr.title,
+      body: pr.body,
+    }));
+
+    const prompt = promptTemplate.replace(`{{pull_requests}}`, JSON.stringify(batched, null, 2));
+
+    const modelResponse = await ANTHROPIC_CLIENT.messages.create({
+      max_tokens: 4096,
+      model: "claude-haiku-4-5",
+      messages: [{ role: "user", content: prompt }],
+      output_config: {
+        format: {
+          type: "json_schema",
+          schema: {
+            type: "object",
+            properties: {
+              summaries: {
+                type: "array",
+                items: {
+                  type: "object",
+                  properties: {
+                    number: { type: "number" },
+                    headline: { type: "string" },
+                    description: { type: "string" },
+                    tag: { type: "string", enum: ["new", "improved", "fixed", "internal"] },
+                  },
+                  required: ["number", "headline", "description", "tag"],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ["summaries"],
+            additionalProperties: false,
+          },
+        },
+      },
+    });
+
+    const block = modelResponse.content[0];
+    if (!block || block.type !== "text") {
+      return res.status(502).json({ error: "Unexpected response format from model!" });
+    }
+    const result = JSON.parse(block.text);
+
+    return res.json(result.summaries);
+  } catch (e) {
+    return res.status(500).json({ error: "Failed to generate updates!" });
+  }
 });
 
 app.get("/pull_requests", async (req, res) => {
@@ -62,7 +142,7 @@ function checkStatus(state: string, merged_at: string | null) {
 app.post("/pull_requests/sync", async (req, res) => {
   try {
     const response = await fetch(`https://api.github.com/repos/${req.query.owner}/${req.query.repo}/pulls?state=all`, {
-      headers: github_headers,
+      headers: GITHUB_HEADERS,
     });
     const prs = await response.json();
 
@@ -95,7 +175,7 @@ app.get("/summary", async (req, res) => {
     const response = await fetch(`https://api.github.com/repos/${req.query.owner}/${req.query.repo}/pulls/${req.query.id}`);
     const prInfo = await response.json();
 
-    const message = await client.messages.create({
+    const message = await ANTHROPIC_CLIENT.messages.create({
       max_tokens: 1024,
       system: "You summarize GitHub pull requests concisely.",
       messages: [{ role: "user", content: `Summarize this PR in one to two sentences for a customer-facing user.\n\nTitle: ${prInfo.title}\n\nDescription: ${prInfo.body}` }],
@@ -114,6 +194,6 @@ app.get("/summary", async (req, res) => {
   }
 });
 
-app.listen(port, () => {
+app.listen(EXPRESS_PORT, () => {
   console.log("Server is running!");
 });
