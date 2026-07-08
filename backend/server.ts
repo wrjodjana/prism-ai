@@ -38,10 +38,10 @@ app.get("/", (req, res) => {
 });
 
 // customer-facing requests
-app.get("/updates/:owner/:repo", async (req, res) => {
+app.post("/sync/:owner/:repo", async (req, res) => {
   try {
     const { owner, repo } = req.params;
-    const githubResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls?state=closed`, {
+    const githubResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls?state=closed&per_page=100`, {
       headers: GITHUB_HEADERS,
     });
 
@@ -60,6 +60,7 @@ app.get("/updates/:owner/:repo", async (req, res) => {
       number: pr.number,
       title: pr.title,
       body: pr.body,
+      merged_at: pr.merged_at,
     }));
 
     const prompt = promptTemplate.replace(`{{pull_requests}}`, JSON.stringify(batched, null, 2));
@@ -83,8 +84,9 @@ app.get("/updates/:owner/:repo", async (req, res) => {
                     headline: { type: "string" },
                     description: { type: "string" },
                     tag: { type: "string", enum: ["new", "improved", "fixed", "internal"] },
+                    merged_at: { type: "string" },
                   },
-                  required: ["number", "headline", "description", "tag"],
+                  required: ["number", "headline", "description", "tag", "merged_at"],
                   additionalProperties: false,
                 },
               },
@@ -102,9 +104,31 @@ app.get("/updates/:owner/:repo", async (req, res) => {
     }
     const result = JSON.parse(block.text);
 
-    return res.json(result.summaries);
+    const query = `INSERT INTO updates_entries (owner, repo, number, headline, description, tag, merged_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7) 
+                ON CONFLICT (owner, repo, number) 
+                DO UPDATE SET headline=EXCLUDED.headline, description=EXCLUDED.description, tag=EXCLUDED.tag, merged_at=EXCLUDED.merged_at`;
+
+    for (const s of result.summaries) {
+      const values = [owner, repo, s.number, s.headline, s.description, s.tag, s.merged_at];
+      await pool.query(query, values);
+    }
+
+    return res.status(201).json({ message: "Successfully summarized PRs and added to Postgres!" });
   } catch (e) {
     return res.status(500).json({ error: "Failed to generate updates!" });
+  }
+});
+
+app.get("/updates/:owner/:repo", async (req, res) => {
+  try {
+    const { owner, repo } = req.params;
+    const query = "SELECT * FROM updates_entries WHERE owner=$1 AND repo=$2 ORDER BY merged_at DESC";
+    const values = [owner, repo];
+    const response = await pool.query(query, values);
+    return res.json(response.rows);
+  } catch (e) {
+    return res.status(500).json({ error: "Failed to fetch entries!" });
   }
 });
 

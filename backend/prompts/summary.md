@@ -15,7 +15,7 @@ For each pull request, produce:
 - Translate engineering language into user-facing language. "Refactored the auth middleware" becomes something about a smoother or more secure sign-in, but only if the body supports that.
 - Do not invent impact. If the title and body are thin, stay general rather than fabricating specifics.
 - If the body is null or empty, rely on the title alone and stay general.
-- Preserve the `number` from each input so each summary maps back to its pull request.
+- Preserve the `number` and `merged_at` from each input so each summary maps back to its pull request.
 
 ## Examples
 
@@ -25,7 +25,8 @@ For each pull request, produce:
 {
   "number": 42,
   "title": "Add CSV export to reports page",
-  "body": "Users can now download any report as a CSV file via a new Export button."
+  "body": "Users can now download any report as a CSV file via a new Export button.",
+  "merged_at": "2026-01-15T09:30:00Z"
 }
 ```
 
@@ -36,7 +37,8 @@ For each pull request, produce:
   "number": 42,
   "headline": "Download your reports as CSV files",
   "description": "Every report now includes an export button so you can open your data in Excel or Google Sheets.",
-  "tag": "new"
+  "tag": "new",
+  "merged_at": "2026-01-15T09:30:00Z"
 }
 ```
 
@@ -46,7 +48,8 @@ For each pull request, produce:
 {
   "number": 57,
   "title": "Fix pagination offset on search results",
-  "body": "Offset was calculated from the wrong page index, causing duplicate items to appear when moving between pages."
+  "body": "Offset was calculated from the wrong page index, causing duplicate items to appear when moving between pages.",
+  "merged_at": "2026-02-03T14:12:00Z"
 }
 ```
 
@@ -57,7 +60,8 @@ For each pull request, produce:
   "number": 57,
   "headline": "Search pages now show the right results",
   "description": "Moving between pages of search results no longer shows duplicate items.",
-  "tag": "fixed"
+  "tag": "fixed",
+  "merged_at": "2026-02-03T14:12:00Z"
 }
 ```
 
@@ -67,7 +71,8 @@ For each pull request, produce:
 {
   "number": 63,
   "title": "Cache dashboard queries",
-  "body": "Dashboard widgets now read from a shared cache, cutting average load time from 4s to under 1s."
+  "body": "Dashboard widgets now read from a shared cache, cutting average load time from 4s to under 1s.",
+  "merged_at": "2026-02-20T11:00:00Z"
 }
 ```
 
@@ -78,7 +83,8 @@ For each pull request, produce:
   "number": 63,
   "headline": "Dashboards load up to 4x faster",
   "description": "Your dashboard widgets now appear in under a second instead of several seconds.",
-  "tag": "improved"
+  "tag": "improved",
+  "merged_at": "2026-02-20T11:00:00Z"
 }
 ```
 
@@ -88,7 +94,8 @@ For each pull request, produce:
 {
   "number": 68,
   "title": "Bump eslint to 9.2",
-  "body": "Routine dependency update."
+  "body": "Routine dependency update.",
+  "merged_at": "2026-03-01T16:45:00Z"
 }
 ```
 
@@ -99,7 +106,8 @@ For each pull request, produce:
   "number": 68,
   "headline": "Internal tooling update",
   "description": "Routine maintenance with no visible changes.",
-  "tag": "internal"
+  "tag": "internal",
+  "merged_at": "2026-03-01T16:45:00Z"
 }
 ```
 

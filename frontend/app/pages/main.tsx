@@ -9,8 +9,10 @@ export default function Main() {
 
   async function handleSync(owner: string, repo: string) {
     try {
-      await fetch(`http://127.0.0.1:3000/pull_requests/sync?owner=${owner}&repo=${repo}`, { method: "POST" });
-      navigate(`/dashboard/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`);
+      const encodedOwner = encodeURIComponent(owner);
+      const encodedRepo = encodeURIComponent(repo);
+      await fetch(`http://127.0.0.1:3000/sync/${encodedOwner}/${encodedRepo}`, { method: "POST" });
+      navigate(`/updates/${encodedOwner}/${encodedRepo}`);
     } catch (e) {
       console.error("Error posting git information", e);
     }

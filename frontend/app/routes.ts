@@ -1,3 +1,3 @@
 import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
-export default [index("pages/landing.tsx"), route("dashboard/:owner/:repo", "pages/dashboard.tsx"), route("main", "pages/main.tsx"), route("updates", "pages/updates.tsx")] satisfies RouteConfig;
+export default [index("pages/landing.tsx"), route("dashboard/:owner/:repo", "pages/dashboard.tsx"), route("main", "pages/main.tsx"), route("updates/:owner/:repo", "pages/updates.tsx")] satisfies RouteConfig;
