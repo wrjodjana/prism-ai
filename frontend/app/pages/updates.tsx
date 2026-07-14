@@ -12,7 +12,7 @@ interface Update {
   headline: string;
   description: string;
   tag: EntryTag;
-  merged_at: string;
+  merged_at: Date;
 }
 
 const FilterTags: FilterTag[] = ["All", "New", "Improved", "Fixed"];
@@ -31,9 +31,9 @@ export default function Updates() {
     async function fetchUpdates() {
       try {
         const response = await fetch(`http://127.0.0.1:3001/updates/${encodedOwner}/${encodedRepo}`, { method: "GET" });
-        const data = await response.json();
-        const nonInternalData = data.filter((d: any) => d.tag !== "internal");
-        setUpdates(nonInternalData);
+        const updates = await response.json();
+        const filteredData = updates.filter((d: any) => d.tag !== "internal").map((d: any) => ({ ...d, merged_at: new Date(d.merged_at) }));
+        setUpdates(filteredData);
 
         console.log("Successfully added updates!");
       } catch (e) {
@@ -43,12 +43,28 @@ export default function Updates() {
     fetchUpdates();
   }, [owner, repo]);
 
-  const filteredUpdates = updates.filter((u) => {
+  const selectedUpdates = updates.filter((u) => {
     if (selectedTag === "All") {
       return true;
     }
     return u.tag === selectedTag.toLowerCase();
   });
+
+  function groupByMonth(updates: Update[]) {
+    const sorted = updates.toSorted((a, b) => +b.merged_at - +a.merged_at);
+
+    const groups = new Map<string, Update[]>();
+    for (const update of sorted) {
+      const month = update.merged_at.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+      const entries = groups.get(month);
+      if (entries) {
+        entries.push(update);
+      } else {
+        groups.set(month, [update]);
+      }
+    }
+    return Array.from(groups, ([month, entries]) => ({ month, entries }));
+  }
 
   async function deleteUpdates() {
     try {
@@ -72,9 +88,14 @@ export default function Updates() {
           <FilterButton key={tag} tag={tag} isActive={selectedTag === tag} onClick={() => setSelectedTag(tag)} />
         ))}
       </div>
-      <div className="flex flex-col gap-4 px-4">
-        {filteredUpdates.map((u) => (
-          <Entry key={u.number} headline={u.headline} description={u.description} tag={u.tag} />
+      <div className="flex flex-col gap-8 px-4 pb-8">
+        {groupByMonth(selectedUpdates).map(({ month, entries }) => (
+          <div key={month} className="flex flex-col gap-3">
+            <h2 className="text-lg font-medium text-gray-900">{month}</h2>
+            {entries.map((u) => (
+              <Entry key={u.number} headline={u.headline} description={u.description} tag={u.tag} />
+            ))}
+          </div>
         ))}
       </div>
     </div>
