@@ -25,7 +25,7 @@ export default function Updates() {
   useEffect(() => {
     async function fetchUpdates() {
       try {
-        const response = await fetch(`http://127.0.0.1:3000/updates/${encodedOwner}/${encodedRepo}`, { method: "GET" });
+        const response = await fetch(`http://127.0.0.1:3001/updates/${encodedOwner}/${encodedRepo}`, { method: "GET" });
         const data = await response.json();
         const nonInternalData = data.filter((d: any) => d.tag !== "internal");
         setUpdates(nonInternalData);
@@ -40,7 +40,7 @@ export default function Updates() {
 
   async function deleteUpdates() {
     try {
-      await fetch("http://127.0.0.1:3000/updates", { method: "DELETE" });
+      await fetch("http://127.0.0.1:3001/updates", { method: "DELETE" });
       navigate("/main");
     } catch (e) {
       console.error("Failed to delete updates!", e);

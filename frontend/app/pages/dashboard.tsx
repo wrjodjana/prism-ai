@@ -22,7 +22,7 @@ export default function Dashboard() {
   useEffect(() => {
     async function fetchPRs() {
       try {
-        const response = await fetch("http://127.0.0.1:3000/pull_requests", { method: "GET" });
+        const response = await fetch("http://127.0.0.1:3001/pull_requests", { method: "GET" });
         const data = await response.json();
         setPullRequests(data);
 
@@ -43,7 +43,7 @@ export default function Dashboard() {
 
   async function deletePRs() {
     try {
-      await fetch("http://127.0.0.1:3000/pull_requests", { method: "DELETE" });
+      await fetch("http://127.0.0.1:3001/pull_requests", { method: "DELETE" });
       navigate("/main");
       console.log("Successfully deleted pull requests!");
     } catch (e) {

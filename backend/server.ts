@@ -20,7 +20,7 @@ const pool = new Pool({
 const app = express();
 app.use(cors());
 
-const EXPRESS_PORT = 3000;
+const EXPRESS_PORT = 3001;
 const GITHUB_HEADERS = {
   "User-Agent": "prism-ai",
   Accept: "application/vnd.github+json",
