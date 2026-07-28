@@ -1,3 +1,4 @@
+import { Badge } from "~/components/ui/badge";
 import type { EntryTag } from "./entry/pill";
 import { colorMap } from "./entry/pill";
 
@@ -11,12 +12,14 @@ interface FilterButtonProps {
 }
 
 export default function FilterButton({ tag, isActive, count, onClick }: FilterButtonProps) {
-  const activeStyles = tag === "All" ? "bg-gray-900 text-white border-transparent" : `${colorMap[tag.toLowerCase() as EntryTag]} border-transparent`;
+  const activeStyles = tag === "All" ? "bg-primary text-primary-foreground" : colorMap[tag.toLowerCase() as EntryTag];
 
   return (
-    <button className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${isActive ? activeStyles : "border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-900"}`} onClick={onClick}>
-      {tag}
-      <span className="ml-1.5 text-xs opacity-60">{count}</span>
-    </button>
+    <Badge asChild variant={isActive ? "default" : "outline"} className={`h-auto cursor-pointer rounded-full px-4 py-1.5 text-sm transition-colors ${isActive ? activeStyles : "text-muted-foreground hover:text-foreground"}`}>
+      <button onClick={onClick}>
+        {tag}
+        <span className="ml-1.5 text-xs opacity-60">{count}</span>
+      </button>
+    </Badge>
   );
 }

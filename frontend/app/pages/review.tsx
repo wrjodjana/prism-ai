@@ -2,7 +2,14 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { useNavigate } from "react-router";
 import ReviewEntry from "~/components/review/reviewEntry";
+import { Button } from "~/components/ui/button";
+import { Card } from "~/components/ui/card";
+import { Checkbox } from "~/components/ui/checkbox";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "~/components/ui/dropdown-menu";
+import { Label } from "~/components/ui/label";
+import { Spinner } from "~/components/ui/spinner";
 import type { EntryTag } from "~/components/updates/entry/pill";
+import type { UpdateResponse } from "~/lib/types";
 
 interface Draft {
   owner: string;
@@ -32,7 +39,6 @@ export default function Review() {
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [menuOpen, setMenuOpen] = useState(false);
   const [confirmingBulk, setConfirmingBulk] = useState<BulkAction | null>(null);
   const [loadingBulk, setLoadingBulk] = useState<BulkAction | null>(null);
 
@@ -42,8 +48,11 @@ export default function Review() {
     async function fetchDrafts() {
       try {
         const response = await fetch(`http://127.0.0.1:3001/updates/${encodedOwner}/${encodedRepo}?status=draft`, { method: "GET" });
-        const data = await response.json();
-        const fetchedDrafts = data.map((d: any) => ({
+        if (!response.ok) {
+          throw new Error("Failed to fetch drafts!");
+        }
+        const data: UpdateResponse[] = await response.json();
+        const fetchedDrafts = data.map((d) => ({
           owner: d.owner,
           repo: d.repo,
           number: d.number,
@@ -123,11 +132,6 @@ export default function Review() {
     return action === "discard-internal" ? internalNumbers.length : selected.size;
   }
 
-  function armBulk(action: BulkAction) {
-    setMenuOpen(false);
-    setConfirmingBulk(action);
-  }
-
   function executeBulk(action: BulkAction) {
     if (action === "publish-selected") {
       bulkUpdate(action, Array.from(selected), "published");
@@ -168,57 +172,60 @@ export default function Review() {
     <div className="max-w-4xl mx-auto">
       <div className="flex flex-row justify-between items-center px-4 py-4">
         <h1 className="text-4xl font-medium">Review Drafts</h1>
-        <button onClick={() => navigate(`/updates/${encodedOwner}/${encodedRepo}`)} className="h-10 border border-black rounded-md px-3 py-2 text-sm hover:text-black text-gray-400">
+        <Button variant="outline" onClick={() => navigate(`/updates/${encodedOwner}/${encodedRepo}`)} className="h-10">
           View Published Updates
-        </button>
+        </Button>
       </div>
-      <p className="px-4 pb-4 text-sm text-gray-500">
+      <p className="px-4 pb-4 text-sm text-muted-foreground">
         {drafts.length} {drafts.length === 1 ? "draft" : "drafts"} awaiting review
       </p>
       {drafts.length > 0 && (
         <div className="flex flex-row flex-wrap items-center justify-between gap-3 px-4 pb-4">
           <div className="flex flex-row items-center gap-3">
-            <label className="flex cursor-pointer flex-row items-center gap-2 text-sm text-gray-500">
-              <input type="checkbox" checked={allSelected} onChange={() => toggleSelectAll()} className="h-4 w-4 accent-black" />
+            <Label className="flex cursor-pointer flex-row items-center gap-2 text-sm text-muted-foreground">
+              <Checkbox checked={allSelected} onCheckedChange={() => toggleSelectAll()} />
               Select all
-            </label>
-            {selected.size > 0 && <span className="text-sm text-gray-400">{selected.size} selected</span>}
+            </Label>
+            {selected.size > 0 && <span className="text-sm text-muted-foreground">{selected.size} selected</span>}
           </div>
-          <div className="relative flex flex-row items-center gap-3">
+          <div className="flex flex-row items-center gap-3">
             {confirmingBulk !== null && loadingBulk === null && (
-              <button onClick={() => setConfirmingBulk(null)} className="text-sm text-gray-400 hover:text-gray-900">
+              <Button variant="ghost" size="sm" onClick={() => setConfirmingBulk(null)} className="text-muted-foreground hover:text-foreground">
                 Cancel
-              </button>
+              </Button>
             )}
-            <button
-              onClick={() => (confirmingBulk !== null ? executeBulk(confirmingBulk) : setMenuOpen(!menuOpen))}
-              disabled={loadingBulk !== null}
-              className={`h-10 border rounded-md px-3 py-2 text-sm flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed ${confirmingBulk !== null ? "bg-gray-900 text-white border-transparent" : "border-black hover:text-black text-gray-400"}`}
-            >
-              {loadingBulk !== null ? (
-                <>
-                  <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Working...</span>
-                </>
-              ) : (
-                <span>{confirmingBulk !== null ? `Confirm: ${bulkLabels[confirmingBulk]} (${bulkCount(confirmingBulk)})` : "Bulk actions"}</span>
-              )}
-            </button>
-            {menuOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                <div className="absolute right-0 top-full z-20 mt-1 w-56 rounded-md border border-gray-200 bg-white py-1 shadow-sm">
-                  <button onClick={() => armBulk("publish-selected")} disabled={selected.size === 0} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300">
+            {confirmingBulk !== null ? (
+              <Button onClick={() => executeBulk(confirmingBulk)} disabled={loadingBulk !== null} className="h-10">
+                {loadingBulk !== null ? (
+                  <>
+                    <Spinner />
+                    <span>Working...</span>
+                  </>
+                ) : (
+                  <span>
+                    Confirm: {bulkLabels[confirmingBulk]} ({bulkCount(confirmingBulk)})
+                  </span>
+                )}
+              </Button>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="h-10">
+                    Bulk actions
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem disabled={selected.size === 0} onSelect={() => setConfirmingBulk("publish-selected")}>
                     Publish selected ({selected.size})
-                  </button>
-                  <button onClick={() => armBulk("discard-selected")} disabled={selected.size === 0} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300">
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled={selected.size === 0} onSelect={() => setConfirmingBulk("discard-selected")}>
                     Discard selected ({selected.size})
-                  </button>
-                  <button onClick={() => armBulk("discard-internal")} disabled={internalNumbers.length === 0} className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-300">
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled={internalNumbers.length === 0} onSelect={() => setConfirmingBulk("discard-internal")}>
                     Discard all internal ({internalNumbers.length})
-                  </button>
-                </div>
-              </>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
         </div>
@@ -228,12 +235,12 @@ export default function Review() {
           <ReviewEntry key={d.number} owner={d.owner} repo={d.repo} number={d.number} headline={d.headline} description={d.description} tag={d.tag} prTitle={d.pr_title} prBody={d.pr_body} isSelected={selected.has(d.number)} onToggleSelect={toggleSelect} onPublish={publishDraft} onDiscard={discardDraft} />
         ))}
         {!isLoading && drafts.length === 0 && (
-          <div className="flex flex-col items-center gap-3 rounded-lg border border-gray-200 p-8">
-            <p className="text-sm text-gray-500">All caught up — no drafts awaiting review.</p>
-            <button onClick={() => navigate(`/updates/${encodedOwner}/${encodedRepo}`)} className="h-10 border border-black rounded-md px-3 py-2 text-sm hover:text-black text-gray-400">
+          <Card className="items-center gap-3 rounded-lg p-8">
+            <p className="text-sm text-muted-foreground">All caught up — no drafts awaiting review.</p>
+            <Button variant="outline" onClick={() => navigate(`/updates/${encodedOwner}/${encodedRepo}`)} className="h-10">
               View Published Updates
-            </button>
-          </div>
+            </Button>
+          </Card>
         )}
       </div>
     </div>

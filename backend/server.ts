@@ -132,6 +132,7 @@ app.post("/sync/:owner/:repo", async (req, res) => {
 
     return res.status(201).json({ message: "Successfully summarized PRs and added to Postgres!", drafted });
   } catch (e) {
+    console.error("Failed to generate updates!", e);
     return res.status(500).json({ error: "Failed to generate updates!" });
   }
 });
@@ -160,6 +161,7 @@ app.get("/updates/:owner/:repo", async (req, res) => {
     const response = await pool.query(query, values);
     return res.json(response.rows);
   } catch (e) {
+    console.error("Failed to fetch entries!", e);
     return res.status(500).json({ error: "Failed to fetch entries!" });
   }
 });
@@ -182,6 +184,7 @@ app.patch("/updates/:owner/:repo", async (req, res) => {
     const response = await pool.query(query, values);
     return res.json({ updated: response.rowCount ?? 0 });
   } catch (e) {
+    console.error("Failed to update entries!", e);
     return res.status(500).json({ error: "Failed to update entries!" });
   }
 });
@@ -242,6 +245,7 @@ app.patch("/updates/:owner/:repo/:number", async (req, res) => {
 
     return res.json(response.rows[0]);
   } catch (e) {
+    console.error("Failed to update entry!", e);
     return res.status(500).json({ error: "Failed to update entry!" });
   }
 });
@@ -254,6 +258,7 @@ app.delete("/updates/:owner/:repo", async (req, res) => {
     await pool.query(query, values);
     return res.status(200).json({ message: "Successfully deleted updates!" });
   } catch (e) {
+    console.error("Failed to delete updates!", e);
     return res.status(500).json({ error: "Failed to delete updates!" });
   }
 });
@@ -264,6 +269,7 @@ app.delete("/updates", async (req, res) => {
     await pool.query(query);
     return res.status(200).json({ message: "Successfully deleted updates!" });
   } catch (e) {
+    console.error("Failed to delete updates!", e);
     return res.status(500).json({ error: "Failed to delete updates!" });
   }
 });

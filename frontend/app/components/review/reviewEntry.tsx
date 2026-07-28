@@ -1,4 +1,12 @@
 import { useState } from "react";
+import { Badge } from "~/components/ui/badge";
+import { Button } from "~/components/ui/button";
+import { Card } from "~/components/ui/card";
+import { Checkbox } from "~/components/ui/checkbox";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import { Spinner } from "~/components/ui/spinner";
+import { Textarea } from "~/components/ui/textarea";
 import { colorMap, labelMap, type EntryTag } from "~/components/updates/entry/pill";
 
 const entryTags: EntryTag[] = ["new", "improved", "fixed", "internal"];
@@ -53,66 +61,66 @@ export default function ReviewEntry({ owner, repo, number, headline, description
   }
 
   return (
-    <div className={`flex flex-col gap-4 rounded-lg border p-4 ${isSelected ? "border-black" : "border-gray-200"}`}>
+    <Card className={`gap-4 rounded-lg p-4 ${isSelected ? "ring-2 ring-primary" : ""}`}>
       <div className="flex flex-row items-start gap-3">
-        <div className="flex flex-1 flex-col gap-1 rounded-md bg-gray-50 p-3">
-          <a href={`https://github.com/${owner}/${repo}/pull/${number}`} target="_blank" rel="noreferrer" className="text-xs text-gray-400 transition-colors hover:text-gray-900">
+        <div className="flex flex-1 flex-col gap-1 rounded-md bg-muted/50 p-3">
+          <a href={`https://github.com/${owner}/${repo}/pull/${number}`} target="_blank" rel="noreferrer" className="text-xs text-muted-foreground transition-colors hover:text-foreground">
             Source: PR #{number} ↗
           </a>
-          <p className="text-sm font-medium text-gray-900">{prTitle ?? "Source PR data unavailable"}</p>
-          <p className="text-sm text-gray-500 whitespace-pre-wrap">{displayedBody}</p>
+          <p className="text-sm font-medium text-foreground">{prTitle ?? "Source PR data unavailable"}</p>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{displayedBody}</p>
           {isLongBody && (
-            <button onClick={() => setShowFullBody(!showFullBody)} className="self-start text-sm text-gray-400 hover:text-gray-900">
+            <Button variant="link" size="sm" onClick={() => setShowFullBody(!showFullBody)} className="h-auto self-start p-0 text-muted-foreground hover:text-foreground">
               {showFullBody ? "Show less" : "Show more"}
-            </button>
+            </Button>
           )}
         </div>
-        <label className="flex shrink-0 cursor-pointer flex-row items-center gap-2 text-sm text-gray-500">
-          <input type="checkbox" checked={isSelected} onChange={() => onToggleSelect(number)} className="h-4 w-4 accent-black" />
+        <Label className="flex shrink-0 cursor-pointer flex-row items-center gap-2 text-sm text-muted-foreground">
+          <Checkbox checked={isSelected} onCheckedChange={() => onToggleSelect(number)} />
           Select
-        </label>
+        </Label>
       </div>
-      <div className="flex flex-col space-y-1">
-        <label className="text-sm font-medium text-gray-700">Headline</label>
-        <input value={editedHeadline} onChange={(e) => setEditedHeadline(e.target.value)} type="text" className="border border-black rounded-md px-3 py-2 text-sm focus:outline-none" />
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={`headline-${number}`}>Headline</Label>
+        <Input id={`headline-${number}`} value={editedHeadline} onChange={(e) => setEditedHeadline(e.target.value)} type="text" />
       </div>
-      <div className="flex flex-col space-y-1">
-        <label className="text-sm font-medium text-gray-700">Description</label>
-        <textarea value={editedDescription} onChange={(e) => setEditedDescription(e.target.value)} rows={3} className="border border-black rounded-md px-3 py-2 text-sm focus:outline-none resize-none" />
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={`description-${number}`}>Description</Label>
+        <Textarea id={`description-${number}`} value={editedDescription} onChange={(e) => setEditedDescription(e.target.value)} rows={3} className="resize-none" />
       </div>
-      <div className="flex flex-col space-y-1">
-        <label className="text-sm font-medium text-gray-700">Tag</label>
+      <div className="flex flex-col gap-1.5">
+        <Label>Tag</Label>
         <div className="flex flex-row items-center gap-2">
           {entryTags.map((t) => (
-            <button key={t} onClick={() => setEditedTag(t)} className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${editedTag === t ? `${colorMap[t]} border-transparent` : "border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-900"}`}>
-              {labelMap[t]}
-            </button>
+            <Badge key={t} asChild variant={editedTag === t ? "default" : "outline"} className={`h-auto cursor-pointer rounded-full px-4 py-1.5 text-sm transition-colors ${editedTag === t ? colorMap[t] : "text-muted-foreground hover:text-foreground"}`}>
+              <button onClick={() => setEditedTag(t)}>{labelMap[t]}</button>
+            </Badge>
           ))}
-          {editedTag === "internal" && <span className="text-sm text-gray-400">Hidden from the public updates page</span>}
+          {editedTag === "internal" && <span className="text-sm text-muted-foreground">Hidden from the public updates page</span>}
         </div>
       </div>
       <div className="flex flex-row gap-3">
-        <button onClick={() => handlePublish()} disabled={pendingAction !== null || editedHeadline.trim() === ""} className="h-10 border border-black rounded-md px-3 py-2 text-sm hover:text-black text-gray-400 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-gray-400">
+        <Button variant="outline" onClick={() => handlePublish()} disabled={pendingAction !== null || editedHeadline.trim() === ""} className="h-10">
           {pendingAction === "publish" ? (
             <>
-              <span className="h-4 w-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+              <Spinner />
               <span>Publishing...</span>
             </>
           ) : (
             <span>Publish</span>
           )}
-        </button>
-        <button onClick={() => handleDiscard()} disabled={pendingAction !== null} className="h-10 border border-black rounded-md px-3 py-2 text-sm hover:text-black text-gray-400 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-gray-400">
+        </Button>
+        <Button variant="outline" onClick={() => handleDiscard()} disabled={pendingAction !== null} className="h-10">
           {pendingAction === "discard" ? (
             <>
-              <span className="h-4 w-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+              <Spinner />
               <span>Discarding...</span>
             </>
           ) : (
             <span>Discard</span>
           )}
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 }

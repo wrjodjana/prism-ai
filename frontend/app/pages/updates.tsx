@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { useNavigate } from "react-router";
 import FilterButton, { type FilterTag } from "~/components/updates/filterButton";
+import { Button } from "~/components/ui/button";
+import type { UpdateResponse } from "~/lib/types";
 
 interface Update {
   owner: string;
@@ -32,15 +34,29 @@ export default function Updates() {
     async function fetchUpdates() {
       try {
         const response = await fetch(`http://127.0.0.1:3001/updates/${encodedOwner}/${encodedRepo}?status=published`, { method: "GET" });
-        const updates = await response.json();
-        const filteredData = updates.filter((d: any) => d.tag !== "internal").map((d: any) => ({ ...d, merged_at: new Date(d.merged_at) }));
+        if (!response.ok) {
+          throw new Error("Failed to fetch published updates!");
+        }
+        const data: UpdateResponse[] = await response.json();
+        const filteredData = data
+          .filter((d) => d.tag !== "internal")
+          .map((d) => ({
+            owner: d.owner,
+            repo: d.repo,
+            number: d.number,
+            headline: d.headline,
+            description: d.description,
+            tag: d.tag,
+            merged_at: new Date(d.merged_at),
+          }));
         setUpdates(filteredData);
 
         const draftResponse = await fetch(`http://127.0.0.1:3001/updates/${encodedOwner}/${encodedRepo}?status=draft`, { method: "GET" });
-        const drafts = await draftResponse.json();
+        if (!draftResponse.ok) {
+          throw new Error("Failed to fetch drafts!");
+        }
+        const drafts: UpdateResponse[] = await draftResponse.json();
         setDraftCount(drafts.length);
-
-        console.log("Successfully added updates!");
       } catch (e) {
         console.error("Failed to fetch updates!", e);
       }
@@ -82,7 +98,10 @@ export default function Updates() {
 
   async function deleteUpdates() {
     try {
-      await fetch(`http://127.0.0.1:3001/updates/${encodedOwner}/${encodedRepo}`, { method: "DELETE" });
+      const response = await fetch(`http://127.0.0.1:3001/updates/${encodedOwner}/${encodedRepo}`, { method: "DELETE" });
+      if (!response.ok) {
+        throw new Error("Failed to delete updates!");
+      }
       navigate("/main");
     } catch (e) {
       console.error("Failed to delete updates!", e);
@@ -95,13 +114,13 @@ export default function Updates() {
         <h1 className="text-4xl font-medium">Product Updates</h1>
         <div className="flex flex-row gap-3">
           {draftCount > 0 && (
-            <button onClick={() => navigate(`/updates/${encodedOwner}/${encodedRepo}/review`)} className="h-10 border border-black rounded-md px-3 py-2 text-sm hover:text-black text-gray-400">
+            <Button variant="outline" onClick={() => navigate(`/updates/${encodedOwner}/${encodedRepo}/review`)} className="h-10">
               Review Drafts ({draftCount})
-            </button>
+            </Button>
           )}
-          <button onClick={() => deleteUpdates()} className="h-10 border border-black rounded-md px-3 py-2 text-sm hover:text-black text-gray-400">
+          <Button variant="outline" onClick={() => deleteUpdates()} className="h-10">
             Disconnect Repository
-          </button>
+          </Button>
         </div>
       </div>
       <div className="flex flex-row gap-3 px-4 pb-4">
@@ -113,7 +132,7 @@ export default function Updates() {
         <div className="flex flex-1 flex-col gap-8">
           {monthGroups.map(({ month, entries }) => (
             <div key={month} id={month} className="flex flex-col gap-3 scroll-mt-8">
-              <h2 className="text-lg font-medium text-gray-900">{month}</h2>
+              <h2 className="text-lg font-medium text-foreground">{month}</h2>
               {entries.map((u) => (
                 <Entry key={u.number} headline={u.headline} description={u.description} tag={u.tag} />
               ))}
@@ -123,9 +142,9 @@ export default function Updates() {
         {monthGroups.length > 0 && (
           <nav className="sticky top-8 hidden w-36 shrink-0 flex-col gap-1 self-start md:flex">
             {monthGroups.map(({ month }) => (
-              <button key={month} onClick={() => document.getElementById(month)?.scrollIntoView({ behavior: "smooth" })} className="py-1 text-left text-sm text-gray-400 transition-colors hover:text-gray-900">
+              <Button key={month} variant="ghost" size="sm" onClick={() => document.getElementById(month)?.scrollIntoView({ behavior: "smooth" })} className="justify-start px-1 py-1 text-left text-sm font-normal text-muted-foreground hover:bg-transparent hover:text-foreground">
                 {month}
-              </button>
+              </Button>
             ))}
           </nav>
         )}
